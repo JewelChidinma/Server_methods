@@ -71,7 +71,7 @@ function addBook(req, res) {
             const allBooks = [...oldBooks, newBook]
 
 
-            fs.writeFile(booksDbPath, JSON.stringify(allBooks), (err, data) => {
+            fs.writeFile(booksDbPath, JSON.stringify(allBooks), (err) => {
                 if (err) {
                     console.log(err);
                     res.writeHead(500);
@@ -90,8 +90,8 @@ function addBook(req, res) {
 }
 
 
-function  updateBook(req, res) {
-       const body = []
+function updateBook(req, res) {
+    const body = []
 
     req.on("data", (chunk) => {
         body.push(chunk)
@@ -109,12 +109,35 @@ function  updateBook(req, res) {
                 res.end("An Error Occured")
                 return;
             }
-            
+
             const booksObj = JSON.parse(books)
             const bookIndex = booksObj.findIndex(book => book.id === bookId)
             console.log(bookIndex)
 
-         
+            if (bookIndex === -1) {
+                res.writeHead(404)
+                res.end("Book with the specified id not found")
+                return
+            }
+
+            const updatedBook = { ...booksObj[bookIndex], ...detailsToUpdate }
+            booksObj[bookIndex] = updatedBook
+
+
+            fs.writeFile(booksDbPath, JSON.stringify(booksObj), (err) => {
+                if (err) {
+                    console.log(err);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({
+                        message: "Internal Server Error. Could not save book to database."
+                    }));
+                }
+
+                res.writeHead(200)
+                res.end("Update Successful!");
+
+            })
+
         })
 
     })
