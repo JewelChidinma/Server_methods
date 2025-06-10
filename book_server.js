@@ -111,6 +111,7 @@ function updateBook(req, res) {
             }
 
             const booksObj = JSON.parse(books)
+
             const bookIndex = booksObj.findIndex(book => book.id === bookId)
             console.log(bookIndex)
 
@@ -144,7 +145,57 @@ function updateBook(req, res) {
 }
 
 
+function deleteBook(req, res) {
 
+    const body = []
+
+    req.on("data", (chunk) => {
+        body.push(chunk)
+    })
+
+    req.on("end", () => {
+        const parsedBook = Buffer.concat(body).toString()
+        const detailsToUpdate = JSON.parse(parsedBook)
+        const bookId = detailsToUpdate.id
+
+        fs.readFile(booksDbPath, "utf8", (err, books) => {
+            if (err) {
+                console.log(err)
+                res.writeHead(400)
+                res.end("An Error Occured")
+                return;
+            }
+
+            const booksObj = JSON.parse(books)
+
+            const bookIndex = booksObj.findIndex(book => book.id === bookId)
+
+            if (bookIndex === -1) {
+                res.writeHead(404)
+                res.end("Book with the specified id not found")
+                return
+            }
+            booksObj.splice(bookIndex, 1)
+
+
+            fs.writeFile(booksDbPath, JSON.stringify(booksObj), (err) => {
+                if (err) {
+                    console.log(err);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({
+                        message: "Internal Server Error. Could not save book to database."
+                    }));
+                }
+
+                res.writeHead(200)
+                res.end("Deletion Successful!");
+
+            })
+
+        })
+
+    })
+}
 
 
 const server = http.createServer(requestHandler)
